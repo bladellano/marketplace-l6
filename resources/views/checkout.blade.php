@@ -13,6 +13,12 @@
             <form action="" method="post">
                 <div class="row">
                     <div class="col-md-12 form-group">
+                        <label>Nome do Cartão</label>
+                        <input type="text" name="card_name" id="" class="form-control">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 form-group">
                         <label>Número do Cartão <span class="brand"></span></label>
                         <input type="text" name="card_number" id="" class="form-control">
                         <input type="hidden" name="card_brand">
@@ -59,8 +65,10 @@
     </script>
 
     <script>
+        let amountTransaction = '{{$cartItems}}';
         let cardNumber = document.querySelector('input[name=card_number]');
         let spanBrand = document.querySelector('span.brand');
+
         cardNumber.addEventListener('keyup', function() {
             if (cardNumber.value.length >= 6) {
                 PagSeguroDirectPayment.getBrand({
@@ -71,7 +79,7 @@
                         spanBrand.innerHTML = imgFlag;
                         document.querySelector('input[name=card_brand]').value = res.brand.name;
 
-                        getInstallments(40, res.brand.name); //O método pede um valor e a brand.name
+                        getInstallments(amountTransaction, res.brand.name); //O método pede um valor e a brand.name
                     },
                     error: function(err) {
                         console.log(err)
@@ -108,14 +116,16 @@
         function proccessPayment(token){
 
             let data = {
-                token:token,
+                card_token:token,
                 hash: PagSeguroDirectPayment.getSenderHash(),
-                installment: document.querySelector('select_installments').value
+                installment: document.querySelector('select.select_installments').value,
+                card_name:document.querySelector('input[name=card_name]').value,
+                _token:'{{csrf_token()}}'
             };
 
             $.ajax({
                 type:'POST',
-                url:'',
+                url:'{{route("checkout.proccess")}}',
                 data:data,
                 dataType:'json',
                 success:function(res){
