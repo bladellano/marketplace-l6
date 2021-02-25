@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Payment\PagSeguro\CreditCard;
 use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
@@ -37,90 +38,28 @@ class CheckoutController extends Controller
     public function proccess(Request $request)
     {
         $dataPost = $request->all();
-        $reference = 'XPTO';
-        $creditCard = new \PagSeguro\Domains\Requests\DirectPayment\CreditCard();
-        $creditCard->setReceiverEmail(env('PAGSEGURO_EMAIL'));
-        $creditCard->setReference($reference);
-        $creditCard->setCurrency("BRL");
-
-        $cartItems = \session()->get('cart');
-
-        foreach ($cartItems as $item) {
-
-            $creditCard->addItems()->withParameters(
-                $reference,
-                $item['name'],
-                $item['amount'],
-                $item['price']
-            );
-        }
-
         $user = auth()->user();
-        $email = env('PAGSEGURO_ENV') == 'sandbox' ? 'test@sandbox.pagseguro.com.br' : $user->email;
+        $cartItems = session()->get('cart');
+        $reference = 'XPTO';
 
-        $creditCard->setSender()->setName($user->name);
-        $creditCard->setSender()->setEmail($email);
+        $creditCardPayment = new CreditCard($cartItems, $user, $dataPost, $reference);
+        $result = $creditCardPayment->doPayment();
 
-        $creditCard->setSender()->setPhone()->withParameters(
-            11,
-            56273440
-        );
+        $userOrder = [
+            'reference' => $reference,
+            'pagseguro_code' => $result->getCode(),
+            'pagseguro_status' => $result->getStatus(),
+            'items' => serialize($cartItems),
+            'store_id' => 42
+        ];
 
-        $creditCard->setSender()->setDocument()->withParameters(
-            'CPF',
-            '86791393009'
-        );
+        $user->orders()->create($userOrder);
 
-        $creditCard->setSender()->setHash($dataPost['hash']);
-
-        $creditCard->setSender()->setIp('127.0.0.0');
-
-        $creditCard->setShipping()->setAddress()->withParameters(
-            'Av. Brig. Faria Lima',
-            '1384',
-            'Jardim Paulistano',
-            '01452002',
-            'São Paulo',
-            'SP',
-            'BRA',
-            'apto. 114'
-        );
-
-        $creditCard->setBilling()->setAddress()->withParameters(
-            'Av. Brig. Faria Lima',
-            '1384',
-            'Jardim Paulistano',
-            '01452002',
-            'São Paulo',
-            'SP',
-            'BRA',
-            'apto. 114'
-        );
-
-        $creditCard->setToken($dataPost['card_token']);
-
-        list($quantity, $installmentAmount) = explode('|', $dataPost['installment']);
-        $installmentAmount = number_format($installmentAmount,2,'.','');
-
-        $creditCard->setInstallment()->withParameters($quantity, $installmentAmount);
-        $creditCard->setHolder()->setBirthdate('01/10/1979');
-        $creditCard->setHolder()->setName($dataPost['card_name']);
-        $creditCard->setHolder()->setPhone()->withParameters(
-            11,
-            56273440
-        );
-
-        $creditCard->setHolder()->setDocument()->withParameters(
-            'CPF',
-            '86791393009'
-        );
-
-        $creditCard->setMode('DEFAULT');
-
-        $result = $creditCard->register(
-            \PagSeguro\Configuration\Configure::getAccountCredentials()
-        );
-
-        var_dump($result);
+        return response()->json([
+            'data' => [
+                'status' => true,
+                'message' => 'Pedido criado com sucesso'
+            ]
+        ]);
     }
 }

@@ -30,7 +30,6 @@ class User extends Authenticatable
 
     /**
      * The attributes that should be cast to native types.
-     *
      * @var array
      */
     protected $casts = [
@@ -40,5 +39,10 @@ class User extends Authenticatable
     public function store()
     {
         return $this->hasOne(Store::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(UserOrder::class);
     }
 }
