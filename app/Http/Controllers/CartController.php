@@ -14,19 +14,30 @@ class CartController extends Controller
 
     public function add(Request $request)
     {
-        $product = $request->get('product');
+        /* Dados do produto vindo do formulário - input hidden */
+        $productData = $request->get('product');
+
+        /* Busca produto no banco */
+        $product = \App\Product::whereSlug($productData['slug']);
+
+        /* Verifica se tem o produto e se a quantidade é maior que 0 */
+        if (!$product->count() || $productData['amount'] == 0)
+            return \redirect()->route('home');
+
+        /* Junta os arrays $productData e array transformado que veio do banco */
+        $product = array_merge($productData, $product->first(['name','price','store_id'])->toArray());
 
         if (session()->has('cart')) {
 
             $products = session()->get('cart');
             $productsSlugs = array_column($products, 'slug');
 
-            //Procura em $productsSlugs se o produto que está sendo adicionado já possui o mesmo slug.
+            /*Procura em $productsSlugs se o produto que está sendo adicionado já possui o mesmo slug.*/
             if (in_array($product['slug'], $productsSlugs)) {
                 $products = $this->productIncrement($product['slug'], $product['amount'], $products);
                 session()->put('cart', $products);
             } else {
-                //Se não, adiciona normalmentel.
+                /*Se não, adiciona normalmentel.*/
                 session()->push('cart', $product);
             }
         } else {

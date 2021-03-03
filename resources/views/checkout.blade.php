@@ -1,5 +1,9 @@
 @extends('layouts.front')
 
+@section('stylesheets')
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+@endsection
+
 @section('content')
 
     <div class="container">
@@ -14,13 +18,13 @@
                 <div class="row">
                     <div class="col-md-12 form-group">
                         <label>Nome do Cartão</label>
-                        <input type="text" name="card_name" id="" class="form-control">
+                        <input type="text" name="card_name" id="" class="form-control" value="CAIO DELLANO">
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-12 form-group">
                         <label>Número do Cartão <span class="brand"></span></label>
-                        <input type="text" name="card_number" id="" class="form-control">
+                        <input type="text" name="card_number" id="" class="form-control" value="4111111111111111">
                         <input type="hidden" name="card_brand">
                     </div>
                 </div>
@@ -56,16 +60,18 @@
 @section('scripts')
     {{-- <script src="https://stc.pagseguro.uol.com.br/pagseguro/api/v2/checkout/pagseguro.directpayment.js"></script> --}}
     <script src="https://stc.sandbox.pagseguro.uol.com.br/pagseguro/api/v2/checkout/pagseguro.directpayment.js"></script>
-    <script src="{{asset('assets/js/jquery.ajax.js')}}"></script>
-    <script>
 
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    {{-- <script src="{{ asset('assets/js/jquery.ajax.js') }}"></script> --}}
+    <script>
         const sessionId = '{{ session()->get('pagseguro_session_code') }}';
         PagSeguroDirectPayment.setSessionId(sessionId);
 
     </script>
 
     <script>
-        let amountTransaction = '{{$cartItems}}';
+        let amountTransaction = '{{ $cartItems }}';
         let cardNumber = document.querySelector('input[name=card_number]');
         let spanBrand = document.querySelector('span.brand');
 
@@ -79,13 +85,14 @@
                         spanBrand.innerHTML = imgFlag;
                         document.querySelector('input[name=card_brand]').value = res.brand.name;
 
-                        getInstallments(amountTransaction, res.brand.name); //O método pede um valor e a brand.name
+                        getInstallments(amountTransaction, res.brand
+                            .name); //O método pede um valor e a brand.name
                     },
                     error: function(err) {
                         console.log(err)
                     },
                     complete: function(res) {
-                        // console.log('Complete ',res)
+                        console.log('Complete ',res)
                     }
 
                 });
@@ -99,37 +106,38 @@
 
             event.preventDefault();
 
-        PagSeguroDirectPayment.createCardToken({
-            cardNumber:      document.querySelector('input[name=card_number]').value,
-            brand:           document.querySelector('input[name=card_brand]').value,
-            cvv:             document.querySelector('input[name=card_cvv]').value,
-            expirationMonth: document.querySelector('input[name=card_month]').value,
-            expirationYear:  document.querySelector('input[name=card_year]').value,
-            success: function(res) {
-                proccessPayment(res.card.token) //Token enviado pelo pagseguro do cartão
-            }
-          });
+            PagSeguroDirectPayment.createCardToken({
+                cardNumber: document.querySelector('input[name=card_number]').value,
+                brand: document.querySelector('input[name=card_brand]').value,
+                cvv: document.querySelector('input[name=card_cvv]').value,
+                expirationMonth: document.querySelector('input[name=card_month]').value,
+                expirationYear: document.querySelector('input[name=card_year]').value,
+                success: function(res) {
+                    proccessPayment(res.card.token) //Token enviado pelo pagseguro do cartão
+                }
+            });
 
         });
 
         /* Enviando de fato para o backend */
-        function proccessPayment(token){
+        function proccessPayment(token) {
 
             let data = {
-                card_token:token,
+                card_token: token,
                 hash: PagSeguroDirectPayment.getSenderHash(),
                 installment: document.querySelector('select.select_installments').value,
-                card_name:document.querySelector('input[name=card_name]').value,
-                _token:'{{csrf_token()}}'
+                card_name: document.querySelector('input[name=card_name]').value,
+                _token: '{{ csrf_token() }}'
             };
 
             $.ajax({
-                type:'POST',
-                url:'{{route("checkout.proccess")}}',
-                data:data,
-                dataType:'json',
-                success:function(res){
-                    alert(res.data.message);
+                type: 'POST',
+                url: '{{ route('checkout.proccess') }}',
+                data: data,
+                dataType: 'json',
+                success: function(res) {
+                    toastr.success(res.data.message, 'Sucesso');
+                    window.location.href = '{{ route('checkout.thanks') }}?order=' + res.data.order;
                 }
             });
         }

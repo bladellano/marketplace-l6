@@ -2,6 +2,8 @@
 
 Route::get('/', 'HomeController@index')->name('home');
 Route::get('/product/{slug}', 'HomeController@single')->name('product.single');
+Route::get('/category/{slug}', 'CategoryController@index')->name('category.single');
+Route::get('/store/{slug}', 'StoreController@index')->name('store.single');
 
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', 'CartController@index')->name('index');
@@ -10,9 +12,10 @@ Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('cancel', 'CartController@cancel')->name('cancel');
 });
 
-Route::prefix('checkout')->name('checkout.')->group(function(){
-    Route::get('/','CheckoutController@index')->name('index');
-    Route::post('/proccess','CheckoutController@proccess')->name('proccess');
+Route::prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('/', 'CheckoutController@index')->name('index');
+    Route::post('/proccess', 'CheckoutController@proccess')->name('proccess');
+    Route::get('/thanks', 'CheckoutController@thanks')->name('thanks');
 });
 
 
@@ -111,8 +114,10 @@ Route::get('/model', function () {
 });
 
 Route::group(['middleware' => ['auth']], function () {
-    Route::prefix('admin')->name('admin.')->namespace('Admin')->group(function () {
 
+    Route::get('my-orders', 'UserOrderController@index')->name('user.orders');
+
+    Route::prefix('admin')->name('admin.')->namespace('Admin')->group(function () {
         /* Route::prefix('stores')->name('stores.')->group(function () {
 
             Route::get('', 'StoreController@index')->name('index');
@@ -124,12 +129,11 @@ Route::group(['middleware' => ['auth']], function () {
             Route::get('/destroy/{store}', 'StoreController@destroy')->name('destroy');
 
         }); */
-
         Route::resource('products', 'ProductController');
         Route::resource('stores', 'StoreController');
         Route::resource('categories', 'CategoryController');
-
         Route::post('photos/remove', 'ProductPhotoController@removePhoto')->name('photo.remove');
+        Route::get('orders/my', 'OrdersController@index')->name('ordes.my');
     });
 });
 

@@ -12,6 +12,8 @@ class CheckoutController extends Controller
         if (!\auth()->check()) {
             return redirect()->route('login');
         }
+
+        if(!\session()->has('cart')) return \redirect()->route('home');
         // session()->forget('pagseguro_session_code');
         $this->makePagSeguroSession();
 
@@ -24,6 +26,58 @@ class CheckoutController extends Controller
         return view('checkout', compact('cartItems'));
     }
 
+    public function proccess(Request $request)
+    {
+        try {
+
+            $dataPost = $request->all();
+            $user = auth()->user();
+            $cartItems = session()->get('cart');
+            $stores = array_unique(array_column($cartItems,'store_id'));
+            $reference = 'XPTO';
+
+            $creditCardPayment = new CreditCard($cartItems, $user, $dataPost, $reference);
+            $result = $creditCardPayment->doPayment();
+
+            $userOrder = [
+                'reference' => $reference,
+                'pagseguro_code' => $result->getCode(),
+                'pagseguro_status' => $result->getStatus(),
+                'items' => serialize($cartItems),
+                'store_id' => 42
+            ];
+
+            $userOrder = $user->orders()->create($userOrder);//retorna um $userOrder e ai sobrescreve a variável.
+            $userOrder->stores()->sync($stores);
+
+            session()->forget('cart');
+            session()->forget('pagseguro_session_code');
+
+            return response()->json([
+                'data' => [
+                    'status' => true,
+                    'message' => 'Pedido criado com sucesso',
+                    'order' => $reference
+                ]
+            ]);
+        } catch (\Exception $e) {
+
+            $message = env('APP_DEBUG') ? $e->getMessage() : 'Erro ao processar pedido!';
+
+            return response()->json([
+                'data' => [
+                    'status' => false,
+                    'message' => $message
+                ]
+            ], 401);
+        }
+    }
+
+    public function thanks()
+    {
+        return view('thanks');
+    }
+
     private function makePagSeguroSession()
     {
 
@@ -33,33 +87,5 @@ class CheckoutController extends Controller
             );
             return session()->put('pagseguro_session_code', $sessionCode->getResult());
         }
-    }
-
-    public function proccess(Request $request)
-    {
-        $dataPost = $request->all();
-        $user = auth()->user();
-        $cartItems = session()->get('cart');
-        $reference = 'XPTO';
-
-        $creditCardPayment = new CreditCard($cartItems, $user, $dataPost, $reference);
-        $result = $creditCardPayment->doPayment();
-
-        $userOrder = [
-            'reference' => $reference,
-            'pagseguro_code' => $result->getCode(),
-            'pagseguro_status' => $result->getStatus(),
-            'items' => serialize($cartItems),
-            'store_id' => 42
-        ];
-
-        $user->orders()->create($userOrder);
-
-        return response()->json([
-            'data' => [
-                'status' => true,
-                'message' => 'Pedido criado com sucesso'
-            ]
-        ]);
     }
 }

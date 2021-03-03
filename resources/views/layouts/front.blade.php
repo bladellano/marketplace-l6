@@ -8,13 +8,15 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Marketplace L6</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    {{-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"> --}}
+    <link rel="stylesheet" href="{{asset('css/app.css')}}">
     <style>
         .front.row {
             margin-bottom: 30px;
         }
 
     </style>
+    @yield('stylesheets')
 </head>
 
 <body>
@@ -32,19 +34,33 @@
                 <li class="nav-item @if (request()->is('/')) active @endif">
                     <a class="nav-link" href="{{ route('home') }}">Home <span class="sr-only">(current)</span></a>
                 </li>
+
+                @foreach ($categories as $category)
+                    <li class="nav-item @if (request()->is('category/' . $category->slug)) active @endif">
+                        <a class="nav-link"
+                            href="{{ route('category.single', ['slug' => $category->slug]) }}">{{ $category->name }}</a>
+                    </li>
+
+                @endforeach
             </ul>
 
             <div class="my-2 my-lg-0">
                 <ul class="navbar-nav mr-auto">
+                    @auth
+
+                    <li class="nav-item @if (request()->is('my-orders')) active @endif">
+                        <a href="{{ route('user.orders') }}" class="nav-link">Meus Pedidos</a>
+                    </li>
+                    @endauth
                     <li class="nav-item">
                         @if (session()->has('cart'))
-                        <a href="{{route('cart.index')}}" class="nav-link">
-                            <span class="badge badge-danger">{{ count( session()->get('cart')) }}</span>
-                            {{-- <span class="badge badge-danger">{{ array_sum(array_column(session()->get('cart'), 'amount')) }}</span> --}}
+                            <a href="{{ route('cart.index') }}" class="nav-link">
+                                <span class="badge badge-danger">{{ count(session()->get('cart')) }}</span>
+                                {{-- <span class="badge badge-danger">{{ array_sum(array_column(session()->get('cart'), 'amount')) }}</span> --}}
 
                         @endif
-                        <i class="fa fa-shopping-cart"></i>
-                    </a>
+                        <i class="fa fa-2x fa-shopping-cart mt-1"></i>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -56,6 +72,8 @@
         @include('flash::message')
         @yield('content')
     </div>
+    {{-- <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script> --}}
+    <script src="{{asset('js/app.js')}}"></script>
     @yield('scripts')
 </body>
 
