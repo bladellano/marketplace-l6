@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Mail\UserRegisteredEmail;
 use Illuminate\Support\Facades\Hash;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Support\Facades\Mail;
 
 class RegisterController extends Controller
 {
@@ -27,14 +29,12 @@ class RegisterController extends Controller
 
     /**
      * Where to redirect users after registration.
-     *
      * @var string
      */
     protected $redirectTo = RouteServiceProvider::HOME;
 
     /**
      * Create a new controller instance.
-     *
      * @return void
      */
     public function __construct()
@@ -59,7 +59,6 @@ class RegisterController extends Controller
 
     /**
      * Create a new user instance after a valid registration.
-     *
      * @param  array  $data
      * @return \App\User
      */
@@ -75,8 +74,11 @@ class RegisterController extends Controller
     // Após o registro verifica se há sessão ativa do cart
     protected function registered(Request $request, $user)
     {
+        //Enviando email após registrado usando class de Email do Laravel
+        Mail::to($user->email)->send(new UserRegisteredEmail($user));
+
         //Depois de logado, verifica se existe na sessao o cart ativado.
-        if(session()->has('cart')){
+        if (session()->has('cart')) {
             return \redirect()->route('checkout.index');
         }
         return NULL;

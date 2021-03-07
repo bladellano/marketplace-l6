@@ -1,5 +1,6 @@
 <?php
 
+
 Route::get('/', 'HomeController@index')->name('home');
 Route::get('/product/{slug}', 'HomeController@single')->name('product.single');
 Route::get('/category/{slug}', 'CategoryController@index')->name('category.single');
@@ -118,6 +119,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('my-orders', 'UserOrderController@index')->name('user.orders');
 
     Route::prefix('admin')->name('admin.')->namespace('Admin')->group(function () {
+
+        Route::get('notifications','NotificationController@notifications')->name('notifications.index');
+        Route::get('notifications/read-all','NotificationController@readAll')->name('notifications.read.all');
+        Route::get('notifications/read/{notification}','NotificationController@read')->name('notifications.read');
         /* Route::prefix('stores')->name('stores.')->group(function () {
 
             Route::get('', 'StoreController@index')->name('index');
@@ -133,10 +138,42 @@ Route::group(['middleware' => ['auth']], function () {
         Route::resource('stores', 'StoreController');
         Route::resource('categories', 'CategoryController');
         Route::post('photos/remove', 'ProductPhotoController@removePhoto')->name('photo.remove');
-        Route::get('orders/my', 'OrdersController@index')->name('ordes.my');
+        Route::get('orders/my', 'OrdersController@index')->name('orders.my');
     });
 });
 
 Auth::routes();
 
 // Route::get('/home', 'HomeController@index')->name('home');
+
+
+Route::get('not', function () {
+    $user = \App\User::find(4);
+
+    // $user->notify(new \App\Notifications\StoreReceiveNewOrder());
+
+    // $notification = $user->notifications->first();
+    // $notification->markAsRead();
+
+    // return $user->readNotifications;
+
+    $stores = [43,41,30];
+
+    $stores = \App\Store::whereIn('id',$stores)->get();
+
+    return $stores->map(function($store){
+        return get_class($store->user);
+    });
+
+    // return $stores;
+  /*   return $stores->each(function($store){
+        return $store->user;
+    }); */
+
+
+
+    return $user->unreadNotifications->count();
+    return $user->unreadNotifications;
+    // return $user->notifications;
+    // return 'Ok';
+});
